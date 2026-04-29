@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { CATEGORIES } from "@/lib/categories"
 
 export function ProductForm({ onSubmit, initialData, onCancel }) {
   const [formData, setFormData] = useState({
@@ -13,7 +21,7 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
     category: "",
     stock: "",
     description: "",
-    image: "", // Added image field to form
+    image: "",
   })
 
   const [errors, setErrors] = useState({})
@@ -53,19 +61,20 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+
+      {/* Image Preview */}
       <div className="space-y-2">
-        <Label>Product Visuals</Label>
-        <div className="aspect-video w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/20 overflow-hidden relative group">
-          {formData.image || initialData?.image ? (
-            <img src={formData.image || initialData?.image} alt="Preview" className="w-full h-full object-cover" />
+        <Label>Product Visual</Label>
+        <div className="aspect-video w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/20 overflow-hidden">
+          {formData.image ? (
+            <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
           ) : (
-            <div className="text-center p-4">
-              <p className="text-xs text-muted-foreground">Image URL will generate a preview</p>
-            </div>
+            <p className="text-xs text-muted-foreground">Image URL will generate a preview</p>
           )}
         </div>
       </div>
 
+      {/* Image URL */}
       <div className="space-y-2">
         <Label htmlFor="image">Image URL</Label>
         <Input
@@ -76,6 +85,7 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
         />
       </div>
 
+      {/* Product Name */}
       <div className="space-y-2">
         <Label htmlFor="name">Product Name *</Label>
         <Input
@@ -88,6 +98,7 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
         {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
       </div>
 
+      {/* Price + Stock */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="price">Price ($) *</Label>
@@ -116,18 +127,31 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
         </div>
       </div>
 
+      {/* Category Dropdown */}
       <div className="space-y-2">
         <Label htmlFor="category">Category *</Label>
-        <Input
-          id="category"
+        <Select
           value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className={errors.category ? "border-destructive" : ""}
-          placeholder="Electronics, Audio, etc."
-        />
+          onValueChange={(value) => setFormData({ ...formData, category: value })}
+        >
+          <SelectTrigger
+            id="category"
+            className={errors.category ? "border-destructive" : ""}
+          >
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
       </div>
 
+      {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
@@ -139,6 +163,7 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
         />
       </div>
 
+      {/* Actions */}
       <div className="flex gap-3 pt-4">
         <Button type="submit" className="flex-1">
           {initialData ? "Update Product" : "Create Product"}

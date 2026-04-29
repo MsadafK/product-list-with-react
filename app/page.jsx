@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, Suspense } from "react"
+import { useState, useMemo, Suspense, useEffect } from "react"
 import {
   LayoutGrid,
   List,
@@ -12,6 +12,10 @@ import {
   Package,
   Pencil,
   Trash2,
+  RotateCcw,
+  ArrowUpDown,
+  DollarSign,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +25,8 @@ import { ProductForm } from "@/components/product-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { saveProducts, loadProducts, clearProducts } from "@/lib/storage"
+import { CATEGORIES, ALL_FILTER_LABEL } from "@/lib/categories"
 
 const INITIAL_PRODUCTS = [
   {
@@ -106,34 +112,74 @@ export default function ProductDashboardPage() {
 }
 
 function ProductDashboard() {
+  // Server aur client dono INITIAL_PRODUCTS se start karein — hydration safe
   const [products, setProducts] = useState(INITIAL_PRODUCTS)
-  const [view, setView] = useState("card") // "card" or "list"
+  const [hydrated, setHydrated] = useState(false)
+
+  const [view, setView] = useState("card")
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [isModified, setIsModified] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState(ALL_FILTER_LABEL)
+  const [sortBy, setSortBy] = useState("default")
 
   const itemsPerPage = 6
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
+  // Client mount ke baad localStorage se load karo (SSR ke baad)
+  useEffect(() => {
+    const saved = loadProducts()
+    if (saved) {
+      setProducts(saved)
+      // Sirf tab modified maano jab data actually INITIAL_PRODUCTS se alag ho
+      const hasChanged = JSON.stringify(saved) !== JSON.stringify(INITIAL_PRODUCTS)
+      setIsModified(hasChanged)
+    }
+    setHydrated(true)
+  }, [])
+
+  // Sirf hydration ke baad save karo — warna INITIAL_PRODUCTS overwrite ho jaate hain
+  useEffect(() => {
+    if (hydrated) saveProducts(products)
+  }, [products, hydrated])
+
   useMemo(() => {
     setCurrentPage(1)
-  }, [debouncedSearchTerm])
+  }, [debouncedSearchTerm, selectedCategory])
 
   // Filtering & Pagination Logic
   const filteredProducts = useMemo(() => {
-    return products.filter(
-      (p) =>
+    return products.filter((p) => {
+      const matchesSearch =
         p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        p.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
-    )
-  }, [products, debouncedSearchTerm])
+        p.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      const matchesCategory =
+        selectedCategory === ALL_FILTER_LABEL || p.category === selectedCategory
+      return matchesSearch && matchesCategory
+    })
+  }, [products, debouncedSearchTerm, selectedCategory])
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const sortedProducts = useMemo(() => {
+    const arr = [...filteredProducts]
+    switch (sortBy) {
+      case "name-asc":  return arr.sort((a, b) => a.name.localeCompare(b.name))
+      case "name-desc": return arr.sort((a, b) => b.name.localeCompare(a.name))
+      case "price-asc": return arr.sort((a, b) => a.price - b.price)
+      case "price-desc":return arr.sort((a, b) => b.price - a.price)
+      case "stock-asc": return arr.sort((a, b) => a.stock - b.stock)
+      case "stock-desc":return arr.sort((a, b) => b.stock - a.stock)
+      default:          return arr
+    }
+  }, [filteredProducts, sortBy])
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage)
   const currentProducts = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
-    return filteredProducts.slice(start, start + itemsPerPage)
-  }, [filteredProducts, currentPage])
+    return sortedProducts.slice(start, start + itemsPerPage)
+  }, [sortedProducts, currentPage])
 
   // Handlers
   const handleAddOrEdit = (productData) => {
@@ -142,12 +188,14 @@ function ProductDashboard() {
     } else {
       setProducts([...products, productData])
     }
+    setIsModified(true)
     setIsFormOpen(false)
     setEditingProduct(null)
   }
 
   const handleDelete = (id) => {
     setProducts(products.filter((p) => p.id !== id))
+    setIsModified(true)
   }
 
   const openEditModal = (product) => {
@@ -155,9 +203,30 @@ function ProductDashboard() {
     setIsFormOpen(true)
   }
 
+  // Reset handler — localStorage clear karke defaults restore karo
+  const handleReset = () => {
+    clearProducts()
+    setProducts(INITIAL_PRODUCTS)
+    setIsModified(false)
+    setIsResetDialogOpen(false)
+    setSearchTerm("")
+    setCurrentPage(1)
+    setSelectedCategory(ALL_FILTER_LABEL)
+    setSortBy("default")
+  }
+
+  // Stats — always computed from full products list (not filtered)
+  const stats = useMemo(() => {
+    const totalProducts = products.length
+    const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0)
+    const lowStockCount = products.filter((p) => p.stock <= 10).length
+    return { totalProducts, totalValue, lowStockCount }
+  }, [products])
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
+
         {/* Header Section */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
@@ -169,47 +238,154 @@ function ProductDashboard() {
             <h1 className="text-4xl font-bold tracking-tight">Products</h1>
           </div>
 
-          <Button
-            onClick={() => {
-              setEditingProduct(null)
-              setIsFormOpen(true)
-            }}
-            className="w-full md:w-auto"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Create Product
-          </Button>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Reset button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsResetDialogOpen(true)}
+              disabled={!isModified}
+              className="text-muted-foreground hover:text-destructive hover:border-destructive transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+
+            <Button
+              onClick={() => {
+                setEditingProduct(null)
+                setIsFormOpen(true)
+              }}
+              className="flex-1 md:flex-none"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Create Product
+            </Button>
+          </div>
         </header>
 
-        {/* Toolbar Section */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-y border-border py-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              className="pl-10 bg-secondary/50"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border border border-border rounded-xl overflow-hidden bg-card">
+
+          {/* Total Products */}
+          <div className="px-6 py-5">
+            <p className="text-sm text-muted-foreground mb-3">Total Products</p>
+            <div className="flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight">{stats.totalProducts}</p>
+              <Package className="w-4 h-4 text-muted-foreground/40 mb-1" />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-secondary p-1 rounded-lg self-start md:self-auto">
-            <Button
-              variant={view === "list" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setView("list")}
-              className={cn("px-3", view === "list" && "bg-background shadow-sm")}
-            >
-              <List className="w-4 h-4 mr-2" /> List
-            </Button>
-            <Button
-              variant={view === "card" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setView("card")}
-              className={cn("px-3", view === "card" && "bg-background shadow-sm")}
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" /> Card
-            </Button>
+          {/* Inventory Value */}
+          <div className="px-6 py-5">
+            <p className="text-sm text-muted-foreground mb-3">Inventory Value</p>
+            <div className="flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight">
+                ${stats.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <DollarSign className="w-4 h-4 text-muted-foreground/40 mb-1" />
+            </div>
           </div>
+
+          {/* Low Stock */}
+          <div className="px-6 py-5">
+            <p className="text-sm text-muted-foreground mb-3">Low Stock Alerts</p>
+            <div className="flex items-end justify-between">
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-semibold tracking-tight">{stats.lowStockCount}</p>
+                {stats.lowStockCount > 0 && (
+                  <span className="text-xs font-medium text-orange-500 mb-0.5">needs attention</span>
+                )}
+                {stats.lowStockCount === 0 && (
+                  <span className="text-xs font-medium text-emerald-500 mb-0.5">all good</span>
+                )}
+              </div>
+              <AlertTriangle className={cn("w-4 h-4 mb-1", stats.lowStockCount > 0 ? "text-orange-400/60" : "text-muted-foreground/40")} />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Toolbar Section */}
+        <div className="flex flex-col gap-3 border-y border-border py-4">
+
+          {/* Row 1 — Search + Sort + View Toggle */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                className="pl-10 bg-secondary/50"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-3 self-start md:self-auto">
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 text-muted-foreground">
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    {sortBy === "default"    ? "Sort"           :
+                     sortBy === "name-asc"   ? "Name A→Z"       :
+                     sortBy === "name-desc"  ? "Name Z→A"       :
+                     sortBy === "price-asc"  ? "Price Low→High" :
+                     sortBy === "price-desc" ? "Price High→Low" :
+                     sortBy === "stock-asc"  ? "Stock Low→High" :
+                                              "Stock High→Low"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setSortBy("default")}    className={cn(sortBy === "default"    && "bg-accent")}>Default</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("name-asc")}   className={cn(sortBy === "name-asc"   && "bg-accent")}>Name A→Z</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("name-desc")}  className={cn(sortBy === "name-desc"  && "bg-accent")}>Name Z→A</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("price-asc")}  className={cn(sortBy === "price-asc"  && "bg-accent")}>Price Low→High</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("price-desc")} className={cn(sortBy === "price-desc" && "bg-accent")}>Price High→Low</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("stock-asc")}  className={cn(sortBy === "stock-asc"  && "bg-accent")}>Stock Low→High</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("stock-desc")} className={cn(sortBy === "stock-desc" && "bg-accent")}>Stock High→Low</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 bg-secondary p-1 rounded-lg">
+                <Button
+                  variant={view === "list" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setView("list")}
+                  className={cn("px-3", view === "list" && "bg-background shadow-sm")}
+                >
+                  <List className="w-4 h-4 mr-2" /> List
+                </Button>
+                <Button
+                  variant={view === "card" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setView("card")}
+                  className={cn("px-3", view === "card" && "bg-background shadow-sm")}
+                >
+                  <LayoutGrid className="w-4 h-4 mr-2" /> Card
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2 — Category Filter Chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {[ALL_FILTER_LABEL, ...CATEGORIES].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                  selectedCategory === cat
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground hover:text-foreground"
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
         </div>
 
         {/* Content Area */}
@@ -361,9 +537,9 @@ function ProductDashboard() {
             <p className="text-sm text-muted-foreground order-2 md:order-1">
               Showing <span className="text-foreground font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
               <span className="text-foreground font-medium">
-                {Math.min(currentPage * itemsPerPage, filteredProducts.length)}
+                {Math.min(currentPage * itemsPerPage, sortedProducts.length)}
               </span>{" "}
-              of <span className="text-foreground font-medium">{filteredProducts.length}</span> products
+              of <span className="text-foreground font-medium">{sortedProducts.length}</span> products
             </p>
             <div className="flex items-center gap-2 order-1 md:order-2">
               <Button
@@ -413,6 +589,26 @@ function ProductDashboard() {
             <DialogTitle>{editingProduct ? "Edit Product" : "Create New Product"}</DialogTitle>
           </DialogHeader>
           <ProductForm onSubmit={handleAddOrEdit} initialData={editingProduct} onCancel={() => setIsFormOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Confirm Dialog */}
+      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Reset to defaults?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            All products will be removed and the original 8 default products will be restored. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="destructive" onClick={handleReset} className="flex-1">
+              Yes, Reset
+            </Button>
+            <Button variant="outline" onClick={() => setIsResetDialogOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
