@@ -12,10 +12,11 @@ import {
   Package,
   Pencil,
   Trash2,
-  RotateCcw,
   ArrowUpDown,
   DollarSign,
   AlertTriangle,
+  Loader2,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,83 +26,8 @@ import { ProductForm } from "@/components/product-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { saveProducts, loadProducts, clearProducts } from "@/lib/storage"
+import { UserButton } from "@clerk/nextjs"
 import { CATEGORIES, ALL_FILTER_LABEL } from "@/lib/categories"
-
-const INITIAL_PRODUCTS = [
-  {
-    id: 1,
-    name: "Neon Flux Headphones",
-    price: 299.99,
-    category: "Electronics",
-    stock: 45,
-    description: "High-fidelity audio with neon accents.",
-    image: "/neon-flux-headphones-dark-sleek.jpg",
-  },
-  {
-    id: 2,
-    name: "Vercel Pro Keypad",
-    price: 159.0,
-    category: "Accessories",
-    stock: 12,
-    description: "Mechanical keyboard for lightning-fast deployments.",
-    image: "/mechanical-keyboard-minimalist-black.jpg",
-  },
-  {
-    id: 3,
-    name: "Edge Runtime Mug",
-    price: 24.5,
-    category: "Lifestyle",
-    stock: 150,
-    description: "Keeps coffee hot at the edge.",
-    image: "/ceramic-coffee-mug-minimalist.jpg",
-  },
-  {
-    id: 4,
-    name: "Turbopack Sticker Set",
-    price: 9.99,
-    category: "Lifestyle",
-    stock: 500,
-    description: "Make your laptop faster.",
-    image: "/tech-stickers-holographic.jpg",
-  },
-  {
-    id: 5,
-    name: "Next.js 16 Hoodie",
-    price: 65.0,
-    category: "Apparel",
-    stock: 30,
-    description: "Comfortable developer wear.",
-    image: "/minimalist-black-hoodie.jpg",
-  },
-  {
-    id: 6,
-    name: "AI Gateway Hub",
-    price: 499.0,
-    category: "Electronics",
-    stock: 5,
-    description: "The ultimate AI routing hardware.",
-    image: "/ai-processor-hardware-server.jpg",
-  },
-  {
-    id: 7,
-    name: "Prisma Database Lens",
-    price: 89.99,
-    category: "Accessories",
-    stock: 85,
-    description: "See your data clearly.",
-    image: "/camera-lens-glass-minimalist.jpg",
-  },
-  {
-    id: 8,
-    name: "Tailwind UI Kit",
-    price: 249.0,
-    category: "Software",
-    stock: 999,
-    description: "Complete design system for faster builds.",
-    image: "/software-box-minimalist-blue.jpg",
-  },
-]
 
 export default function ProductDashboardPage() {
   return (
@@ -112,45 +38,49 @@ export default function ProductDashboardPage() {
 }
 
 function ProductDashboard() {
-  // Server aur client dono INITIAL_PRODUCTS se start karein — hydration safe
-  const [products, setProducts] = useState(INITIAL_PRODUCTS)
-  const [hydrated, setHydrated] = useState(false)
+  const [products, setProducts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [view, setView] = useState("card")
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
-  const [isModified, setIsModified] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [selectedCategory, setSelectedCategory] = useState(ALL_FILTER_LABEL)
   const [sortBy, setSortBy] = useState("default")
 
   const itemsPerPage = 6
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
-  // Client mount ke baad localStorage se load karo (SSR ke baad)
-  useEffect(() => {
-    const saved = loadProducts()
-    if (saved) {
-      setProducts(saved)
-      // Sirf tab modified maano jab data actually INITIAL_PRODUCTS se alag ho
-      const hasChanged = JSON.stringify(saved) !== JSON.stringify(INITIAL_PRODUCTS)
-      setIsModified(hasChanged)
+  // Fetch all products from API on mount
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const res = await fetch("/api/products")
+      if (!res.ok) throw new Error("Failed to fetch products")
+      const data = await res.json()
+      // Normalize image_url -> image for UI consistency
+      setProducts(data.map((p) => ({ ...p, image: p.image_url || "" })))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
     }
-    setHydrated(true)
-  }, [])
+  }
 
-  // Sirf hydration ke baad save karo — warna INITIAL_PRODUCTS overwrite ho jaate hain
   useEffect(() => {
-    if (hydrated) saveProducts(products)
-  }, [products, hydrated])
+    fetchProducts()
+  }, [])
 
   useMemo(() => {
     setCurrentPage(1)
   }, [debouncedSearchTerm, selectedCategory])
 
-  // Filtering & Pagination Logic
+  // Filtering
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesSearch =
@@ -162,16 +92,17 @@ function ProductDashboard() {
     })
   }, [products, debouncedSearchTerm, selectedCategory])
 
+  // Sorting
   const sortedProducts = useMemo(() => {
     const arr = [...filteredProducts]
     switch (sortBy) {
-      case "name-asc":  return arr.sort((a, b) => a.name.localeCompare(b.name))
-      case "name-desc": return arr.sort((a, b) => b.name.localeCompare(a.name))
-      case "price-asc": return arr.sort((a, b) => a.price - b.price)
-      case "price-desc":return arr.sort((a, b) => b.price - a.price)
-      case "stock-asc": return arr.sort((a, b) => a.stock - b.stock)
-      case "stock-desc":return arr.sort((a, b) => b.stock - a.stock)
-      default:          return arr
+      case "name-asc":   return arr.sort((a, b) => a.name.localeCompare(b.name))
+      case "name-desc":  return arr.sort((a, b) => b.name.localeCompare(a.name))
+      case "price-asc":  return arr.sort((a, b) => a.price - b.price)
+      case "price-desc": return arr.sort((a, b) => b.price - a.price)
+      case "stock-asc":  return arr.sort((a, b) => a.stock - b.stock)
+      case "stock-desc": return arr.sort((a, b) => b.stock - a.stock)
+      default:           return arr
     }
   }, [filteredProducts, sortBy])
 
@@ -181,21 +112,62 @@ function ProductDashboard() {
     return sortedProducts.slice(start, start + itemsPerPage)
   }, [sortedProducts, currentPage])
 
-  // Handlers
-  const handleAddOrEdit = (productData) => {
-    if (editingProduct) {
-      setProducts(products.map((p) => (p.id === productData.id ? productData : p)))
-    } else {
-      setProducts([...products, productData])
+  // CREATE or UPDATE
+  const handleAddOrEdit = async (productData) => {
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: productData.name,
+        price: productData.price,
+        category: productData.category,
+        stock: productData.stock,
+        description: productData.description,
+        image_url: productData.image || "",
+      }
+
+      if (editingProduct) {
+        const res = await fetch(`/api/products/${editingProduct.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) {
+          const errData = await res.json()
+          throw new Error(errData.error || "Failed to update product")
+        }
+        const updated = await res.json()
+        setProducts(products.map((p) =>
+          p.id === updated.id ? { ...updated, image: updated.image_url || "" } : p
+        ))
+      } else {
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error("Failed to create product")
+        const created = await res.json()
+        setProducts([{ ...created, image: created.image_url || "" }, ...products])
+      }
+
+      setIsFormOpen(false)
+      setEditingProduct(null)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setIsSubmitting(false)
     }
-    setIsModified(true)
-    setIsFormOpen(false)
-    setEditingProduct(null)
   }
 
-  const handleDelete = (id) => {
-    setProducts(products.filter((p) => p.id !== id))
-    setIsModified(true)
+  // DELETE
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete product")
+      setProducts(products.filter((p) => p.id !== id))
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   const openEditModal = (product) => {
@@ -203,19 +175,7 @@ function ProductDashboard() {
     setIsFormOpen(true)
   }
 
-  // Reset handler — localStorage clear karke defaults restore karo
-  const handleReset = () => {
-    clearProducts()
-    setProducts(INITIAL_PRODUCTS)
-    setIsModified(false)
-    setIsResetDialogOpen(false)
-    setSearchTerm("")
-    setCurrentPage(1)
-    setSelectedCategory(ALL_FILTER_LABEL)
-    setSortBy("default")
-  }
-
-  // Stats — always computed from full products list (not filtered)
+  // Stats
   const stats = useMemo(() => {
     const totalProducts = products.length
     const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0)
@@ -239,16 +199,15 @@ function ProductDashboard() {
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
-            {/* Reset button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsResetDialogOpen(true)}
-              disabled={!isModified}
-              className="text-muted-foreground hover:text-destructive hover:border-destructive transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={fetchProducts}
+              disabled={isLoading}
+              className="text-muted-foreground"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
+              <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
+              Refresh
             </Button>
 
             <Button
@@ -257,9 +216,12 @@ function ProductDashboard() {
                 setIsFormOpen(true)
               }}
               className="flex-1 md:flex-none"
+              disabled={isLoading}
             >
               <Plus className="w-4 h-4 mr-2" /> Create Product
             </Button>
+
+            <UserButton afterSignOutUrl="/sign-in" />
           </div>
         </header>
 
@@ -390,7 +352,18 @@ function ProductDashboard() {
 
         {/* Content Area */}
         <main>
-          {filteredProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <Loader2 className="w-8 h-8 text-muted-foreground animate-spin mb-4" />
+              <p className="text-sm text-muted-foreground">Loading products...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-xl border-destructive/30">
+              <p className="text-sm font-medium text-destructive mb-2">Failed to load products</p>
+              <p className="text-xs text-muted-foreground mb-4">{error}</p>
+              <Button variant="outline" size="sm" onClick={fetchProducts}>Try again</Button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-xl border-border">
               <Package className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
               <h3 className="text-lg font-medium">No products found</h3>
@@ -588,27 +561,12 @@ function ProductDashboard() {
           <DialogHeader>
             <DialogTitle>{editingProduct ? "Edit Product" : "Create New Product"}</DialogTitle>
           </DialogHeader>
-          <ProductForm onSubmit={handleAddOrEdit} initialData={editingProduct} onCancel={() => setIsFormOpen(false)} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Reset Confirm Dialog */}
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] bg-card border-border">
-          <DialogHeader>
-            <DialogTitle>Reset to defaults?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            All products will be removed and the original 8 default products will be restored. This action cannot be undone.
-          </p>
-          <div className="flex gap-3 pt-2">
-            <Button variant="destructive" onClick={handleReset} className="flex-1">
-              Yes, Reset
-            </Button>
-            <Button variant="outline" onClick={() => setIsResetDialogOpen(false)} className="flex-1">
-              Cancel
-            </Button>
-          </div>
+          <ProductForm
+            onSubmit={handleAddOrEdit}
+            initialData={editingProduct}
+            onCancel={() => setIsFormOpen(false)}
+            isSubmitting={isSubmitting}
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select"
 import { CATEGORIES } from "@/lib/categories"
 
-export function ProductForm({ onSubmit, initialData, onCancel }) {
+export function ProductForm({ onSubmit, initialData, onCancel, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -28,7 +28,16 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData)
+      setFormData({
+        name: initialData.name || "",
+        price: initialData.price || "",
+        category: initialData.category || "",
+        stock: initialData.stock ?? "",
+        description: initialData.description || "",
+        image: initialData.image || initialData.image_url || "",
+      })
+    } else {
+      setFormData({ name: "", price: "", category: "", stock: "", description: "", image: "" })
     }
   }, [initialData])
 
@@ -51,7 +60,6 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
     if (validate()) {
       onSubmit({
         ...formData,
-        id: initialData?.id || Date.now(),
         price: Number.parseFloat(formData.price),
         stock: Number.parseInt(formData.stock) || 0,
         image: formData.image || `/placeholder.svg?height=400&width=400&query=${encodeURIComponent(formData.name)}`,
@@ -131,6 +139,7 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
       <div className="space-y-2">
         <Label htmlFor="category">Category *</Label>
         <Select
+          key={formData.category}
           value={formData.category}
           onValueChange={(value) => setFormData({ ...formData, category: value })}
         >
@@ -165,10 +174,10 @@ export function ProductForm({ onSubmit, initialData, onCancel }) {
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">
-        <Button type="submit" className="flex-1">
-          {initialData ? "Update Product" : "Create Product"}
+        <Button type="submit" className="flex-1" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : initialData ? "Update Product" : "Create Product"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
       </div>
