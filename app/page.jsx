@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Loader2,
   RefreshCw,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +27,6 @@ import { ProductForm } from "@/components/product-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { UserButton } from "@clerk/nextjs"
 import { CATEGORIES, ALL_FILTER_LABEL } from "@/lib/categories"
 
 export default function ProductDashboardPage() {
@@ -112,6 +112,17 @@ function ProductDashboard() {
     return sortedProducts.slice(start, start + itemsPerPage)
   }, [sortedProducts, currentPage])
 
+  // Log activity helper
+  const logActivity = async (action, product_name, details = "") => {
+    try {
+      await fetch("/api/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, product_name, details }),
+      })
+    } catch (_) {}
+  }
+
   // CREATE or UPDATE
   const handleAddOrEdit = async (productData) => {
     setIsSubmitting(true)
@@ -139,6 +150,7 @@ function ProductDashboard() {
         setProducts(products.map((p) =>
           p.id === updated.id ? { ...updated, image: updated.image_url || "" } : p
         ))
+        await logActivity("updated", updated.name, `Price: $${updated.price}, Stock: ${updated.stock}`)
       } else {
         const res = await fetch("/api/products", {
           method: "POST",
@@ -148,6 +160,7 @@ function ProductDashboard() {
         if (!res.ok) throw new Error("Failed to create product")
         const created = await res.json()
         setProducts([{ ...created, image: created.image_url || "" }, ...products])
+        await logActivity("created", created.name, `Category: ${created.category}, Price: $${created.price}`)
       }
 
       setIsFormOpen(false)
@@ -162,9 +175,11 @@ function ProductDashboard() {
   // DELETE
   const handleDelete = async (id) => {
     try {
+      const product = products.find((p) => p.id === id)
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete product")
       setProducts(products.filter((p) => p.id !== id))
+      await logActivity("deleted", product?.name || "Unknown", `ID: ${id}`)
     } catch (err) {
       alert(err.message)
     }
@@ -173,6 +188,28 @@ function ProductDashboard() {
   const openEditModal = (product) => {
     setEditingProduct(product)
     setIsFormOpen(true)
+  }
+
+  // CSV Export
+  const handleExportCSV = () => {
+    const headers = ["ID", "Name", "Category", "Price", "Stock", "Description", "Image URL"]
+    const rows = products.map((p) => [
+      p.id,
+      `"${p.name.replace(/"/g, '""')}"`,
+      p.category,
+      p.price.toFixed(2),
+      p.stock,
+      `"${(p.description || "").replace(/"/g, '""')}"`,
+      p.image_url || p.image || "",
+    ])
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `products_${new Date().toISOString().split("T")[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   // Stats
@@ -211,6 +248,17 @@ function ProductDashboard() {
             </Button>
 
             <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={isLoading || products.length === 0}
+              className="text-muted-foreground"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+
+            <Button
               onClick={() => {
                 setEditingProduct(null)
                 setIsFormOpen(true)
@@ -220,8 +268,6 @@ function ProductDashboard() {
             >
               <Plus className="w-4 h-4 mr-2" /> Create Product
             </Button>
-
-            <UserButton afterSignOutUrl="/sign-in" />
           </div>
         </header>
 

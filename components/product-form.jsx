@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { CATEGORIES } from "@/lib/categories"
+import { ImageUpload } from "@/components/image-upload"
 
 export function ProductForm({ onSubmit, initialData, onCancel, isSubmitting = false }) {
   const [formData, setFormData] = useState({
@@ -62,7 +63,7 @@ export function ProductForm({ onSubmit, initialData, onCancel, isSubmitting = fa
         ...formData,
         price: Number.parseFloat(formData.price),
         stock: Number.parseInt(formData.stock) || 0,
-        image: formData.image || `/placeholder.svg?height=400&width=400&query=${encodeURIComponent(formData.name)}`,
+        image: formData.image || "",
       })
     }
   }
@@ -70,26 +71,12 @@ export function ProductForm({ onSubmit, initialData, onCancel, isSubmitting = fa
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
 
-      {/* Image Preview */}
+      {/* Image Upload */}
       <div className="space-y-2">
-        <Label>Product Visual</Label>
-        <div className="aspect-video w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/20 overflow-hidden">
-          {formData.image ? (
-            <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-          ) : (
-            <p className="text-xs text-muted-foreground">Image URL will generate a preview</p>
-          )}
-        </div>
-      </div>
-
-      {/* Image URL */}
-      <div className="space-y-2">
-        <Label htmlFor="image">Image URL</Label>
-        <Input
-          id="image"
+        <Label>Product Image</Label>
+        <ImageUpload
           value={formData.image}
-          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-          placeholder="https://images.unsplash.com/..."
+          onChange={(url) => setFormData({ ...formData, image: url })}
         />
       </div>
 
