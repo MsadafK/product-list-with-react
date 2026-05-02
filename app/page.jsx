@@ -15,7 +15,6 @@ import {
   ArrowUpDown,
   DollarSign,
   AlertTriangle,
-  Loader2,
   RefreshCw,
   Download,
 } from "lucide-react"
@@ -27,6 +26,7 @@ import { ProductForm } from "@/components/product-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import { CATEGORIES, ALL_FILTER_LABEL } from "@/lib/categories"
 
 export default function ProductDashboardPage() {
@@ -51,6 +51,8 @@ function ProductDashboard() {
 
   const [selectedCategory, setSelectedCategory] = useState(ALL_FILTER_LABEL)
   const [sortBy, setSortBy] = useState("default")
+  const [selectedIds, setSelectedIds] = useState([])
+  const [deleteTarget, setDeleteTarget] = useState(null) // { id, name }
 
   const itemsPerPage = 6
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
@@ -63,8 +65,20 @@ function ProductDashboard() {
       const res = await fetch("/api/products")
       if (!res.ok) throw new Error("Failed to fetch products")
       const data = await res.json()
-      // Normalize image_url -> image for UI consistency
-      setProducts(data.map((p) => ({ ...p, image: p.image_url || "" })))
+      const normalized = data.map((p) => ({ ...p, image: p.image_url || "" }))
+      setProducts(normalized)
+
+      // Low stock alerts
+      const lowStock = normalized.filter((p) => p.stock <= 10)
+      if (lowStock.length > 0) {
+        toast.warning(
+          `${lowStock.length} product${lowStock.length > 1 ? "s" : ""} running low on stock`,
+          {
+            description: lowStock.map((p) => `${p.name} (${p.stock} left)`).join(", "),
+            duration: 6000,
+          }
+        )
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -151,6 +165,7 @@ function ProductDashboard() {
           p.id === updated.id ? { ...updated, image: updated.image_url || "" } : p
         ))
         await logActivity("updated", updated.name, `Price: $${updated.price}, Stock: ${updated.stock}`)
+        toast.success(`"${updated.name}" updated successfully`)
       } else {
         const res = await fetch("/api/products", {
           method: "POST",
@@ -161,33 +176,84 @@ function ProductDashboard() {
         const created = await res.json()
         setProducts([{ ...created, image: created.image_url || "" }, ...products])
         await logActivity("created", created.name, `Category: ${created.category}, Price: $${created.price}`)
+        toast.success(`"${created.name}" added to catalog`)
       }
 
       setIsFormOpen(false)
       setEditingProduct(null)
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // DELETE
-  const handleDelete = async (id) => {
+  // DELETE — open confirm dialog first
+  const handleDelete = (id) => {
+    const product = products.find((p) => p.id === id)
+    setDeleteTarget({ id, name: product?.name || "this product" })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
     try {
-      const product = products.find((p) => p.id === id)
-      const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/products/${deleteTarget.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete product")
-      setProducts(products.filter((p) => p.id !== id))
-      await logActivity("deleted", product?.name || "Unknown", `ID: ${id}`)
+      setProducts(products.filter((p) => p.id !== deleteTarget.id))
+      await logActivity("deleted", deleteTarget.name, `ID: ${deleteTarget.id}`)
+      toast.success(`"${deleteTarget.name}" removed from catalog`)
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
   const openEditModal = (product) => {
     setEditingProduct(product)
     setIsFormOpen(true)
+  }
+
+  // Bulk selection helpers
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === currentProducts.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(currentProducts.map((p) => p.id))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds([])
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    const count = selectedIds.length
+    try {
+      await Promise.all(
+        selectedIds.map((id) =>
+          fetch(`/api/products/${id}`, { method: "DELETE" })
+        )
+      )
+      // Log each deletion
+      await Promise.all(
+        selectedIds.map((id) => {
+          const product = products.find((p) => p.id === id)
+          return logActivity("deleted", product?.name || "Unknown", `Bulk delete`)
+        })
+      )
+      setProducts(products.filter((p) => !selectedIds.includes(p.id)))
+      setSelectedIds([])
+      toast.success(`${count} product${count > 1 ? "s" : ""} deleted`)
+    } catch (err) {
+      toast.error("Bulk delete failed")
+    }
   }
 
   // CSV Export
@@ -396,12 +462,63 @@ function ProductDashboard() {
 
         </div>
 
+        {/* Bulk Action Bar — only in list view with selections */}
+        {view === "list" && selectedIds.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-secondary border border-border">
+            <p className="text-sm font-medium">
+              {selectedIds.length} product{selectedIds.length > 1 ? "s" : ""} selected
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="text-muted-foreground">
+                Deselect all
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Delete {selectedIds.length} selected
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Content Area */}
         <main>
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <Loader2 className="w-8 h-8 text-muted-foreground animate-spin mb-4" />
-              <p className="text-sm text-muted-foreground">Loading products...</p>
+            <div className={view === "card"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "border border-border rounded-xl overflow-hidden bg-card divide-y divide-border"
+            }>
+              {Array.from({ length: 6 }).map((_, i) => (
+                view === "card" ? (
+                  <div key={i} className="rounded-xl border border-border bg-card overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-secondary/60" />
+                    <div className="p-5 space-y-3">
+                      <div className="h-2.5 w-16 bg-secondary rounded-full" />
+                      <div className="h-4 w-3/4 bg-secondary rounded-full" />
+                      <div className="h-3 w-full bg-secondary rounded-full" />
+                      <div className="h-3 w-2/3 bg-secondary rounded-full" />
+                      <div className="flex justify-between pt-2">
+                        <div className="h-5 w-20 bg-secondary rounded-full" />
+                        <div className="h-5 w-16 bg-secondary rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="px-6 py-4 flex items-center gap-4 animate-pulse">
+                    <div className="h-10 w-10 rounded bg-secondary shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-1/3 bg-secondary rounded-full" />
+                      <div className="h-2.5 w-1/2 bg-secondary rounded-full" />
+                    </div>
+                    <div className="h-3 w-16 bg-secondary rounded-full" />
+                    <div className="h-3 w-12 bg-secondary rounded-full" />
+                    <div className="h-3 w-10 bg-secondary rounded-full" />
+                  </div>
+                )
+              ))}
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-xl border-destructive/30">
@@ -481,17 +598,39 @@ function ProductDashboard() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-secondary/30 border-b border-border">
                     <tr>
-                      <th className="px-6 py-4 font-medium text-muted-foreground">Product</th>
-                      <th className="px-6 py-4 font-medium text-muted-foreground">Category</th>
-                      <th className="px-6 py-4 font-medium text-muted-foreground">Price</th>
-                      <th className="px-6 py-4 font-medium text-muted-foreground">Stock</th>
-                      <th className="px-6 py-4 font-medium text-muted-foreground text-right">Actions</th>
+                      <th className="px-4 py-4 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-border cursor-pointer"
+                          checked={selectedIds.length === currentProducts.length && currentProducts.length > 0}
+                          onChange={toggleSelectAll}
+                        />
+                      </th>
+                      <th className="px-4 py-4 font-medium text-muted-foreground">Product</th>
+                      <th className="px-4 py-4 font-medium text-muted-foreground">Category</th>
+                      <th className="px-4 py-4 font-medium text-muted-foreground">Price</th>
+                      <th className="px-4 py-4 font-medium text-muted-foreground">Stock</th>
+                      <th className="px-4 py-4 font-medium text-muted-foreground text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {currentProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-secondary/20 transition-colors">
-                        <td className="px-6 py-4">
+                      <tr
+                        key={product.id}
+                        className={cn(
+                          "hover:bg-secondary/20 transition-colors",
+                          selectedIds.includes(product.id) && "bg-secondary/30"
+                        )}
+                      >
+                        <td className="px-4 py-4 w-10">
+                          <input
+                            type="checkbox"
+                            className="rounded border-border cursor-pointer"
+                            checked={selectedIds.includes(product.id)}
+                            onChange={() => toggleSelect(product.id)}
+                          />
+                        </td>
+                        <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded border border-border overflow-hidden bg-secondary/50 shrink-0">
                               <img
@@ -508,13 +647,13 @@ function ProductDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium border border-border">
                             {product.category}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-medium">${product.price.toFixed(2)}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 font-medium">${product.price.toFixed(2)}</td>
+                        <td className="px-4 py-4">
                           <span
                             className={cn(
                               "text-xs font-medium",
@@ -524,7 +663,7 @@ function ProductDashboard() {
                             {product.stock} units
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-4 py-4 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -613,6 +752,26 @@ function ProductDashboard() {
             onCancel={() => setIsFormOpen(false)}
             isSubmitting={isSubmitting}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-[400px] bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Delete product?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">"{deleteTarget?.name}"</span> will be permanently removed. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+              Delete
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1">
+              Cancel
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

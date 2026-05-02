@@ -39,11 +39,15 @@ export default function AnalyticsPage() {
           fetch("/api/products"),
           fetch("/api/activity"),
         ])
+
+        if (!pRes.ok) throw new Error(`Products API error: ${pRes.status}`)
+        if (!lRes.ok) throw new Error(`Activity API error: ${lRes.status}`)
+
         const [pData, lData] = await Promise.all([pRes.json(), lRes.json()])
         setProducts(Array.isArray(pData) ? pData : [])
         setLogs(Array.isArray(lData) ? lData : [])
       } catch (err) {
-        console.error(err)
+        console.error("Analytics fetch error:", err.message)
       } finally {
         setIsLoading(false)
       }

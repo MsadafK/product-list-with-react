@@ -1,8 +1,15 @@
-import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Sidebar } from "@/components/sidebar"
+import { Toaster } from "sonner"
+import { AppShell } from "@/components/app-shell"
+import type { Metadata } from "next"
 import "./globals.css"
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+})
 
 export const metadata: Metadata = {
   title: "Product Catalog",
@@ -17,19 +24,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body>
+        <body className={`${inter.variable} font-sans antialiased`}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            <div className="flex min-h-screen">
-              <Sidebar />
-              <main className="flex-1 overflow-auto">
-                {children}
-              </main>
-            </div>
+            <AppShell>{children}</AppShell>
+            <Toaster position="bottom-right" richColors />
           </ThemeProvider>
         </body>
       </html>
