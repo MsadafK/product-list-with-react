@@ -287,21 +287,21 @@ function ProductDashboard() {
   }, [products])
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-5 md:space-y-8">
 
-        {/* Header Section */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm">
               <span>Inventory</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="text-foreground font-medium">Product Catalog</span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">Products</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Products</h1>
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
@@ -310,7 +310,7 @@ function ProductDashboard() {
               className="text-muted-foreground"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
 
             <Button
@@ -320,8 +320,8 @@ function ProductDashboard() {
               disabled={isLoading || products.length === 0}
               className="text-muted-foreground"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export</span>
             </Button>
 
             <Button
@@ -329,7 +329,8 @@ function ProductDashboard() {
                 setEditingProduct(null)
                 setIsFormOpen(true)
               }}
-              className="flex-1 md:flex-none"
+              size="sm"
+              className="flex-1 sm:flex-none"
               disabled={isLoading}
             >
               <Plus className="w-4 h-4 mr-2" /> Create Product
@@ -338,75 +339,77 @@ function ProductDashboard() {
         </header>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border border border-border rounded-xl overflow-hidden bg-card">
-
-          {/* Total Products */}
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Total Products</p>
+        <div className="grid grid-cols-3 divide-x divide-border border border-border rounded-xl overflow-hidden bg-card">
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">Total Products</p>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-semibold tracking-tight">{stats.totalProducts}</p>
-              <Package className="w-4 h-4 text-muted-foreground/40 mb-1" />
+              <p className="text-xl sm:text-3xl font-semibold tracking-tight">{stats.totalProducts}</p>
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40 mb-0.5" />
             </div>
           </div>
-
-          {/* Inventory Value */}
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Inventory Value</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+              <span className="hidden sm:inline">Inventory Value</span>
+              <span className="sm:hidden">Value</span>
+            </p>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-semibold tracking-tight">
-                ${stats.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <p className="text-xl sm:text-3xl font-semibold tracking-tight">
+                <span className="hidden sm:inline">$</span>
+                {stats.totalValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <DollarSign className="w-4 h-4 text-muted-foreground/40 mb-1" />
+              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40 mb-0.5" />
             </div>
           </div>
-
-          {/* Low Stock */}
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Low Stock Alerts</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+              <span className="hidden sm:inline">Low Stock</span>
+              <span className="sm:hidden">Low Stock</span>
+            </p>
             <div className="flex items-end justify-between">
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-semibold tracking-tight">{stats.lowStockCount}</p>
+              <div className="flex items-baseline gap-1.5">
+                <p className="text-xl sm:text-3xl font-semibold tracking-tight">{stats.lowStockCount}</p>
                 {stats.lowStockCount > 0 && (
-                  <span className="text-xs font-medium text-orange-500 mb-0.5">needs attention</span>
+                  <span className="hidden sm:inline text-xs font-medium text-orange-500">needs attention</span>
                 )}
                 {stats.lowStockCount === 0 && (
-                  <span className="text-xs font-medium text-emerald-500 mb-0.5">all good</span>
+                  <span className="hidden sm:inline text-xs font-medium text-emerald-500">all good</span>
                 )}
               </div>
-              <AlertTriangle className={cn("w-4 h-4 mb-1", stats.lowStockCount > 0 ? "text-orange-400/60" : "text-muted-foreground/40")} />
+              <AlertTriangle className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5", stats.lowStockCount > 0 ? "text-orange-400/60" : "text-muted-foreground/40")} />
             </div>
           </div>
-
         </div>
 
-        {/* Toolbar Section */}
-        <div className="flex flex-col gap-3 border-y border-border py-4">
-
-          {/* Row 1 — Search + Sort + View Toggle */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-96">
+        {/* Toolbar */}
+        <div className="flex flex-col gap-3 border-y border-border py-3 md:py-4">
+          {/* Row 1 — Search + Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <div className="relative w-full sm:w-80 md:w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search products..."
-                className="pl-10 bg-secondary/50"
+                className="pl-10 bg-secondary/50 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="flex items-center gap-3 self-start md:self-auto">
+            <div className="flex items-center gap-2">
               {/* Sort Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 text-muted-foreground">
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    {sortBy === "default"    ? "Sort"           :
-                     sortBy === "name-asc"   ? "Name A→Z"       :
-                     sortBy === "name-desc"  ? "Name Z→A"       :
-                     sortBy === "price-asc"  ? "Price Low→High" :
-                     sortBy === "price-desc" ? "Price High→Low" :
-                     sortBy === "stock-asc"  ? "Stock Low→High" :
-                                              "Stock High→Low"}
+                  <Button variant="outline" size="sm" className="gap-2 text-muted-foreground flex-1 sm:flex-none">
+                    <ArrowUpDown className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">
+                      {sortBy === "default"    ? "Sort"           :
+                       sortBy === "name-asc"   ? "Name A→Z"       :
+                       sortBy === "name-desc"  ? "Name Z→A"       :
+                       sortBy === "price-asc"  ? "Price ↑"        :
+                       sortBy === "price-desc" ? "Price ↓"        :
+                       sortBy === "stock-asc"  ? "Stock ↑"        :
+                                                "Stock ↓"}
+                    </span>
+                    <span className="sm:hidden">Sort</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
@@ -421,28 +424,30 @@ function ProductDashboard() {
               </DropdownMenu>
 
               {/* View Toggle */}
-              <div className="flex items-center gap-2 bg-secondary p-1 rounded-lg">
+              <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg">
                 <Button
                   variant={view === "list" ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setView("list")}
-                  className={cn("px-3", view === "list" && "bg-background shadow-sm")}
+                  className={cn("px-2 sm:px-3", view === "list" && "bg-background shadow-sm")}
                 >
-                  <List className="w-4 h-4 mr-2" /> List
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-2">List</span>
                 </Button>
                 <Button
                   variant={view === "card" ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setView("card")}
-                  className={cn("px-3", view === "card" && "bg-background shadow-sm")}
+                  className={cn("px-2 sm:px-3", view === "card" && "bg-background shadow-sm")}
                 >
-                  <LayoutGrid className="w-4 h-4 mr-2" /> Card
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-2">Card</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Row 2 — Category Filter Chips */}
+          {/* Row 2 — Category chips */}
           <div className="flex items-center gap-2 flex-wrap">
             {[ALL_FILTER_LABEL, ...CATEGORIES].map((cat) => (
               <button
@@ -459,12 +464,11 @@ function ProductDashboard() {
               </button>
             ))}
           </div>
-
         </div>
 
-        {/* Bulk Action Bar — only in list view with selections */}
+        {/* Bulk Action Bar */}
         {view === "list" && selectedIds.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-secondary border border-border">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-secondary border border-border">
             <p className="text-sm font-medium">
               {selectedIds.length} product{selectedIds.length > 1 ? "s" : ""} selected
             </p>
@@ -472,11 +476,7 @@ function ProductDashboard() {
               <Button variant="ghost" size="sm" onClick={clearSelection} className="text-muted-foreground">
                 Deselect all
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-              >
+              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 Delete {selectedIds.length} selected
               </Button>
@@ -484,11 +484,11 @@ function ProductDashboard() {
           </div>
         )}
 
-        {/* Content Area */}
+        {/* Content */}
         <main>
           {isLoading ? (
             <div className={view === "card"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
               : "border border-border rounded-xl overflow-hidden bg-card divide-y divide-border"
             }>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -499,7 +499,6 @@ function ProductDashboard() {
                       <div className="h-2.5 w-16 bg-secondary rounded-full" />
                       <div className="h-4 w-3/4 bg-secondary rounded-full" />
                       <div className="h-3 w-full bg-secondary rounded-full" />
-                      <div className="h-3 w-2/3 bg-secondary rounded-full" />
                       <div className="flex justify-between pt-2">
                         <div className="h-5 w-20 bg-secondary rounded-full" />
                         <div className="h-5 w-16 bg-secondary rounded-full" />
@@ -507,33 +506,32 @@ function ProductDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div key={i} className="px-6 py-4 flex items-center gap-4 animate-pulse">
+                  <div key={i} className="px-4 py-4 flex items-center gap-4 animate-pulse">
                     <div className="h-10 w-10 rounded bg-secondary shrink-0" />
                     <div className="flex-1 space-y-2">
                       <div className="h-3 w-1/3 bg-secondary rounded-full" />
                       <div className="h-2.5 w-1/2 bg-secondary rounded-full" />
                     </div>
-                    <div className="h-3 w-16 bg-secondary rounded-full" />
-                    <div className="h-3 w-12 bg-secondary rounded-full" />
-                    <div className="h-3 w-10 bg-secondary rounded-full" />
+                    <div className="h-3 w-12 bg-secondary rounded-full hidden sm:block" />
+                    <div className="h-3 w-10 bg-secondary rounded-full hidden sm:block" />
                   </div>
                 )
               ))}
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-xl border-destructive/30">
+            <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl border-destructive/30">
               <p className="text-sm font-medium text-destructive mb-2">Failed to load products</p>
               <p className="text-xs text-muted-foreground mb-4">{error}</p>
               <Button variant="outline" size="sm" onClick={fetchProducts}>Try again</Button>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-xl border-border">
-              <Package className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
-              <h3 className="text-lg font-medium">No products found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or add a new product.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl border-border">
+              <Package className="w-10 h-10 text-muted-foreground mb-4 opacity-20" />
+              <h3 className="text-base font-medium">No products found</h3>
+              <p className="text-sm text-muted-foreground">Try adjusting your search or add a new product.</p>
             </div>
           ) : view === "card" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {currentProducts.map((product) => (
                 <Card
                   key={product.id}
@@ -541,7 +539,7 @@ function ProductDashboard() {
                 >
                   <div className="aspect-square overflow-hidden bg-secondary/30 relative">
                     <img
-                      src={product.image || "/placeholder.svg?height=400&width=400&query=product+box"}
+                      src={product.image || "/placeholder.svg?height=400&width=400&query=product"}
                       alt={product.name}
                       className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     />
@@ -563,28 +561,26 @@ function ProductDashboard() {
                       </DropdownMenu>
                     </div>
                   </div>
-                  <CardHeader className="pb-4">
+                  <CardHeader className="pb-2 px-4 pt-4">
                     <div className="space-y-1">
                       <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
                         {product.category}
                       </span>
-                      <CardTitle className="text-xl">{product.name}</CardTitle>
+                      <CardTitle className="text-base sm:text-xl">{product.name}</CardTitle>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 px-4 pb-4">
                     <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                       {product.description || "No description provided."}
                     </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div className="text-2xl font-bold">${product.price.toFixed(2)}</div>
-                      <div
-                        className={cn(
-                          "text-xs px-2 py-1 rounded-full font-medium",
-                          product.stock > 10
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-orange-500/10 text-orange-500",
-                        )}
-                      >
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                      <div className="text-xl sm:text-2xl font-bold">${product.price.toFixed(2)}</div>
+                      <div className={cn(
+                        "text-xs px-2 py-1 rounded-full font-medium",
+                        product.stock > 10
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : "bg-orange-500/10 text-orange-500",
+                      )}>
                         {product.stock} in stock
                       </div>
                     </div>
@@ -595,10 +591,10 @@ function ProductDashboard() {
           ) : (
             <div className="border border-border rounded-xl overflow-hidden bg-card">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
+                <table className="w-full text-sm text-left min-w-[600px]">
                   <thead className="bg-secondary/30 border-b border-border">
                     <tr>
-                      <th className="px-4 py-4 w-10">
+                      <th className="px-4 py-3 w-10">
                         <input
                           type="checkbox"
                           className="rounded border-border cursor-pointer"
@@ -606,11 +602,11 @@ function ProductDashboard() {
                           onChange={toggleSelectAll}
                         />
                       </th>
-                      <th className="px-4 py-4 font-medium text-muted-foreground">Product</th>
-                      <th className="px-4 py-4 font-medium text-muted-foreground">Category</th>
-                      <th className="px-4 py-4 font-medium text-muted-foreground">Price</th>
-                      <th className="px-4 py-4 font-medium text-muted-foreground">Stock</th>
-                      <th className="px-4 py-4 font-medium text-muted-foreground text-right">Actions</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Product</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Price</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Stock</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -622,7 +618,7 @@ function ProductDashboard() {
                           selectedIds.includes(product.id) && "bg-secondary/30"
                         )}
                       >
-                        <td className="px-4 py-4 w-10">
+                        <td className="px-4 py-3 w-10">
                           <input
                             type="checkbox"
                             className="rounded border-border cursor-pointer"
@@ -630,40 +626,38 @@ function ProductDashboard() {
                             onChange={() => toggleSelect(product.id)}
                           />
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded border border-border overflow-hidden bg-secondary/50 shrink-0">
+                            <div className="h-9 w-9 rounded border border-border overflow-hidden bg-secondary/50 shrink-0">
                               <img
-                                src={product.image || "/placeholder.svg?height=80&width=80&query=thumbnail"}
+                                src={product.image || "/placeholder.svg?height=80&width=80"}
                                 alt={product.name}
                                 className="h-full w-full object-cover"
                               />
                             </div>
                             <div>
                               <div className="font-medium text-foreground">{product.name}</div>
-                              <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              <div className="text-xs text-muted-foreground truncate max-w-[160px]">
                                 {product.description}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-3">
                           <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium border border-border">
                             {product.category}
                           </span>
                         </td>
-                        <td className="px-4 py-4 font-medium">${product.price.toFixed(2)}</td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={cn(
-                              "text-xs font-medium",
-                              product.stock > 10 ? "text-emerald-500" : "text-orange-500",
-                            )}
-                          >
+                        <td className="px-4 py-3 font-medium">${product.price.toFixed(2)}</td>
+                        <td className="px-4 py-3">
+                          <span className={cn(
+                            "text-xs font-medium",
+                            product.stock > 10 ? "text-emerald-500" : "text-orange-500",
+                          )}>
                             {product.stock} units
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right">
+                        <td className="px-4 py-3 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -689,51 +683,47 @@ function ProductDashboard() {
           )}
         </main>
 
-        {/* Pagination Section */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col md:flex-row items-center justify-between py-6 gap-4 border-t border-border mt-8">
-            <p className="text-sm text-muted-foreground order-2 md:order-1">
-              Showing <span className="text-foreground font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+          <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-3 border-t border-border">
+            <p className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
+              Showing <span className="text-foreground font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>–
               <span className="text-foreground font-medium">
                 {Math.min(currentPage * itemsPerPage, sortedProducts.length)}
               </span>{" "}
-              of <span className="text-foreground font-medium">{sortedProducts.length}</span> products
+              of <span className="text-foreground font-medium">{sortedProducts.length}</span>
             </p>
-            <div className="flex items-center gap-2 order-1 md:order-2">
+            <div className="flex items-center gap-1 order-1 sm:order-2">
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 bg-transparent"
+                className="h-8 w-8 bg-transparent"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span className="sr-only">Previous page</span>
               </Button>
-
-              <div className="flex items-center gap-1 mx-2">
+              <div className="flex items-center gap-1 mx-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <Button
                     key={pageNum}
                     variant={currentPage === pageNum ? "default" : "outline"}
                     size="icon"
-                    className="h-9 w-9"
+                    className="h-8 w-8"
                     onClick={() => setCurrentPage(pageNum)}
                   >
                     {pageNum}
                   </Button>
                 ))}
               </div>
-
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 bg-transparent"
+                className="h-8 w-8 bg-transparent"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
                 <ChevronRight className="w-4 h-4" />
-                <span className="sr-only">Next page</span>
               </Button>
             </div>
           </div>

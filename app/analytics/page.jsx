@@ -94,58 +94,61 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-5 md:space-y-8">
 
         {/* Header */}
         <header>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm mb-1">
             <span>Dashboard</span>
             <span className="text-foreground font-medium">/ Analytics</span>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight">Analytics</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Analytics</h1>
         </header>
 
         {/* Stats Bar */}
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border border border-border rounded-xl overflow-hidden bg-card">
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Total Products</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">Total Products</p>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-semibold tracking-tight">{totalProducts}</p>
-              <Package className="w-4 h-4 text-muted-foreground/40 mb-1" />
+              <p className="text-xl sm:text-3xl font-semibold tracking-tight">{totalProducts}</p>
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40 mb-0.5" />
             </div>
           </div>
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Inventory Value</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+              <span className="hidden sm:inline">Inventory Value</span>
+              <span className="sm:hidden">Value</span>
+            </p>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-semibold tracking-tight">
-                ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <p className="text-xl sm:text-3xl font-semibold tracking-tight">
+                ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <DollarSign className="w-4 h-4 text-muted-foreground/40 mb-1" />
+              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40 mb-0.5" />
             </div>
           </div>
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Avg. Price</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">Avg. Price</p>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-semibold tracking-tight">${avgPrice.toFixed(2)}</p>
-              <TrendingUp className="w-4 h-4 text-muted-foreground/40 mb-1" />
+              <p className="text-xl sm:text-3xl font-semibold tracking-tight">${avgPrice.toFixed(0)}</p>
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40 mb-0.5" />
             </div>
           </div>
-          <div className="px-6 py-5">
-            <p className="text-sm text-muted-foreground mb-3">Low Stock</p>
+          <div className="px-3 sm:px-6 py-4 sm:py-5">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">Low Stock</p>
             <div className="flex items-end justify-between">
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-semibold tracking-tight">{lowStockCount}</p>
-                {lowStockCount > 0 && <span className="text-xs font-medium text-orange-500 mb-0.5">needs attention</span>}
-                {lowStockCount === 0 && <span className="text-xs font-medium text-emerald-500 mb-0.5">all good</span>}
+              <div className="flex items-baseline gap-1.5">
+                <p className="text-xl sm:text-3xl font-semibold tracking-tight">{lowStockCount}</p>
+                {lowStockCount > 0 && <span className="hidden sm:inline text-xs font-medium text-orange-500">needs attention</span>}
+                {lowStockCount === 0 && <span className="hidden sm:inline text-xs font-medium text-emerald-500">all good</span>}
               </div>
-              <AlertTriangle className={cn("w-4 h-4 mb-1", lowStockCount > 0 ? "text-orange-400/60" : "text-muted-foreground/40")} />
+              <AlertTriangle className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5", lowStockCount > 0 ? "text-orange-400/60" : "text-muted-foreground/40")} />
             </div>
           </div>
         </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Charts — single column on mobile, 2 col on lg */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 
           {/* Stock by Category — Bar Chart */}
           <div className="border border-border rounded-xl bg-card p-6">

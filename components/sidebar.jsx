@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart2, Package } from "lucide-react"
+import { BarChart2, Package, LayoutGrid, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -10,22 +10,40 @@ const navItems = [
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
 ]
 
-export function Sidebar({ collapsed }) {
+export function Sidebar({ collapsed, mobile = false, mobileOpen = false, onMobileClose }) {
   const pathname = usePathname()
 
-  return (
-    <aside
-      className={cn(
-        "hidden md:flex flex-col shrink-0 border-r border-border bg-card transition-all duration-300 overflow-hidden",
-        collapsed ? "w-14" : "w-56"
-      )}
-    >
+  const content = (
+    <>
+      {/* Project logo + name */}
+      <div className="h-14 border-b border-border flex items-center gap-2.5 px-3 shrink-0">
+        <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center shrink-0">
+          <LayoutGrid className="w-4 h-4 text-background" />
+        </div>
+        {(!collapsed || mobile) && (
+          <span className="font-semibold text-sm tracking-tight whitespace-nowrap flex-1">
+            Product Catalog
+          </span>
+        )}
+        {/* Close button — mobile only */}
+        {mobile && (
+          <button
+            onClick={onMobileClose}
+            className="p-1 rounded-md hover:bg-secondary transition-colors text-muted-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Nav Links */}
       <nav className="flex-1 px-2 py-4 space-y-1">
         {navItems.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
-            title={collapsed ? label : undefined}
+            onClick={mobile ? onMobileClose : undefined}
+            title={collapsed && !mobile ? label : undefined}
             className={cn(
               "flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors",
               pathname === href
@@ -34,17 +52,38 @@ export function Sidebar({ collapsed }) {
             )}
           >
             <Icon className="w-4 h-4 shrink-0" />
-            <span
-              className={cn(
-                "whitespace-nowrap transition-all duration-300",
-                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              )}
-            >
-              {label}
-            </span>
+            {(!collapsed || mobile) && (
+              <span className="whitespace-nowrap">{label}</span>
+            )}
           </Link>
         ))}
       </nav>
+    </>
+  )
+
+  // Mobile drawer
+  if (mobile) {
+    return (
+      <aside
+        className={cn(
+          "md:hidden fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border flex flex-col transition-transform duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {content}
+      </aside>
+    )
+  }
+
+  // Desktop sidebar
+  return (
+    <aside
+      className={cn(
+        "hidden md:flex flex-col shrink-0 border-r border-border bg-card transition-all duration-300 overflow-hidden",
+        collapsed ? "w-14" : "w-56"
+      )}
+    >
+      {content}
     </aside>
   )
 }

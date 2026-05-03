@@ -6,16 +6,44 @@ import { Navbar } from "@/components/navbar"
 
 export function AppShell({ children }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <>
-      <Navbar onToggleSidebar={() => setCollapsed((c) => !c)} />
-      <div className="flex min-h-screen pt-14">
-        <Sidebar collapsed={collapsed} />
+    <div className="flex min-h-screen">
+      {/* Desktop sidebar */}
+      <Sidebar collapsed={collapsed} />
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <Sidebar
+        collapsed={false}
+        mobile
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      {/* Right side */}
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <Navbar
+          onToggleSidebar={() => {
+            if (window.innerWidth < 768) {
+              setMobileOpen((o) => !o)
+            } else {
+              setCollapsed((c) => !c)
+            }
+          }}
+        />
         <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
-    </>
+    </div>
   )
 }
