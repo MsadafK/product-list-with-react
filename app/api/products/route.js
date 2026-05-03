@@ -2,40 +2,27 @@ import { supabase } from "@/lib/supabase"
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
-// GET /api/products
+// GET — public (demo mode)
 export async function GET() {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   const { data, error } = await supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
-// POST /api/products
+// POST — auth required
 export async function POST(request) {
   const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await request.json()
   const { name, price, category, stock, description, image_url } = body
 
   if (!name || !price || !category) {
-    return NextResponse.json(
-      { error: "Name, price, and category are required" },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: "Name, price, and category are required" }, { status: 400 })
   }
 
   const { data, error } = await supabase
@@ -44,9 +31,6 @@ export async function POST(request) {
     .select()
     .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data, { status: 201 })
 }

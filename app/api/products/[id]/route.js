@@ -2,22 +2,17 @@ import { supabase } from "@/lib/supabase"
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
-// PUT /api/products/[id]
+// PUT — auth required
 export async function PUT(request, { params }) {
   const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
   const body = await request.json()
   const { name, price, category, stock, description, image_url } = body
 
   if (!name || !price || !category) {
-    return NextResponse.json(
-      { error: "Name, price, and category are required" },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: "Name, price, and category are required" }, { status: 400 })
   }
 
   const { data, error } = await supabase
@@ -27,19 +22,14 @@ export async function PUT(request, { params }) {
     .select()
     .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
-// DELETE /api/products/[id]
+// DELETE — auth required
 export async function DELETE(request, { params }) {
   const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
 
@@ -48,9 +38,6 @@ export async function DELETE(request, { params }) {
     .delete()
     .eq("id", id)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

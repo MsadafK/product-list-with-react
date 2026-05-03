@@ -6,7 +6,7 @@ import { BarChart2, Package, LayoutGrid, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { href: "/", label: "Products", icon: Package },
+  { href: "/dashboard", label: "Products", icon: Package },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
 ]
 
@@ -16,7 +16,7 @@ export function Sidebar({ collapsed, mobile = false, mobileOpen = false, onMobil
   const content = (
     <>
       {/* Project logo + name */}
-      <div className="h-14 border-b border-border flex items-center gap-2.5 px-3 shrink-0">
+      <Link href="/" className="h-14 border-b border-border flex items-center gap-2.5 px-3 shrink-0 hover:bg-secondary/50 transition-colors">
         <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center shrink-0">
           <LayoutGrid className="w-4 h-4 text-background" />
         </div>
@@ -34,7 +34,7 @@ export function Sidebar({ collapsed, mobile = false, mobileOpen = false, onMobil
             <X className="w-4 h-4" />
           </button>
         )}
-      </div>
+      </Link>
 
       {/* Nav Links */}
       <nav className="flex-1 px-2 py-4 space-y-1">
