@@ -424,17 +424,25 @@ function ProductDashboard() {
           ) : view === "card" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {currentProducts.map((product) => (
-                <Card key={product.id} className="group overflow-hidden border-border bg-card transition-all hover:border-muted-foreground/50 flex flex-col">
+                <Card key={product.id} className="group overflow-hidden border-border bg-card transition-all duration-300 hover:border-muted-foreground/50 hover:shadow-lg flex flex-col">
                   <div className="aspect-square overflow-hidden bg-secondary/30 relative">
                     <img
                       src={product.image || "/placeholder.svg?height=400&width=400&query=product"}
                       alt={product.name}
-                      className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                      className="object-cover w-full h-full transition-all duration-500 group-hover:scale-110 group-hover:brightness-90"
                     />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                    {/* Category badge appears on hover */}
+                    <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
+                      <span className="text-[10px] uppercase tracking-widest font-bold bg-background/90 backdrop-blur px-2 py-1 rounded-md text-foreground">
+                        {product.category}
+                      </span>
+                    </div>
                     <div className="absolute top-3 right-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur">
+                          <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>

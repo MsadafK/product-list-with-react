@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTheme } from "next-themes"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -9,7 +10,9 @@ import {
 import { Package, DollarSign, AlertTriangle, Activity, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const COLORS = ["#18181b", "#52525b", "#a1a1aa", "#d4d4d8", "#e4e4e7"]
+// Theme-aware chart colors
+const CHART_COLORS_DARK  = ["#e4e4e7", "#a1a1aa", "#71717a", "#52525b", "#3f3f46"]
+const CHART_COLORS_LIGHT = ["#18181b", "#3f3f46", "#52525b", "#71717a", "#a1a1aa"]
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -31,6 +34,18 @@ export default function AnalyticsPage() {
   const [products, setProducts] = useState([])
   const [logs, setLogs] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const { resolvedTheme } = useTheme()
+
+  const isDark = resolvedTheme === "dark"
+  const COLORS = isDark ? CHART_COLORS_DARK : CHART_COLORS_LIGHT
+  const barColor    = isDark ? "#e4e4e7" : "#18181b"
+  const bar2Color   = isDark ? "#a1a1aa" : "#52525b"
+  const areaStroke  = isDark ? "#e4e4e7" : "#18181b"
+  const areaFill    = isDark ? "#e4e4e7" : "#18181b"
+  const tooltipBg   = isDark ? "#1c1c1c" : "#ffffff"
+  const tooltipBorder = "1px solid var(--border)"
+  const tickColor   = isDark ? "#71717a" : "#a1a1aa"
+  const gridColor   = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"
 
   useEffect(() => {
     const fetchData = async () => {
@@ -156,13 +171,13 @@ export default function AnalyticsPage() {
             <p className="text-xs text-muted-foreground mb-6">Total units available per category</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={categoryData} barSize={32}>
-                <XAxis dataKey="category" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={35} />
+                <XAxis dataKey="category" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)" }}
-                  cursor={{ fill: "var(--secondary)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: tooltipBorder, background: tooltipBg }}
+                  cursor={{ fill: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
                 />
-                <Bar dataKey="stock" fill="#18181b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="stock" fill={barColor} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -186,8 +201,8 @@ export default function AnalyticsPage() {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)" }} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: tooltipBorder, background: tooltipBg }} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: tickColor }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -198,11 +213,11 @@ export default function AnalyticsPage() {
             <p className="text-xs text-muted-foreground mb-6">Number of products in each price range</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={priceBuckets}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="range" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={35} allowDecimals={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)" }} />
-                <Area type="monotone" dataKey="count" stroke="#18181b" fill="#18181b" fillOpacity={0.08} strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="range" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} width={35} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: tooltipBorder, background: tooltipBg }} />
+                <Area type="monotone" dataKey="count" stroke={areaStroke} fill={areaFill} fillOpacity={isDark ? 0.15 : 0.08} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -213,15 +228,15 @@ export default function AnalyticsPage() {
             <p className="text-xs text-muted-foreground mb-6">Total value (price × stock) per category</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={categoryData} barSize={32}>
-                <XAxis dataKey="category" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={55}
+                <XAxis dataKey="category" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} width={55}
                   tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: tooltipBorder, background: tooltipBg }}
                   formatter={(v) => [`$${v.toLocaleString()}`, "Value"]}
-                  cursor={{ fill: "var(--secondary)" }}
+                  cursor={{ fill: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
                 />
-                <Bar dataKey="value" fill="#52525b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill={bar2Color} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

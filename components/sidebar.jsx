@@ -18,7 +18,10 @@ export function Sidebar({ collapsed, mobile = false, mobileOpen = false, onMobil
       {/* Project logo + name */}
       <Link href="/" className="h-14 border-b border-border flex items-center gap-2.5 px-3 shrink-0 hover:bg-secondary/50 transition-colors">
         <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center shrink-0">
-          <LayoutGrid className="w-4 h-4 text-background" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-background">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
         </div>
         {(!collapsed || mobile) && (
           <span className="font-semibold text-sm tracking-tight whitespace-nowrap flex-1">
