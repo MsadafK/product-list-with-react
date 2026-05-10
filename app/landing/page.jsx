@@ -33,11 +33,11 @@ const MARQUEE_ITEMS = ["Next.js 16","Supabase","Clerk Auth","Cloudinary","Tailwi
 function Marquee() {
   const repeated = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS]
   return (
-    <div style={{overflow:"hidden",borderTop:"1px solid rgba(255,255,255,0.07)",borderBottom:"1px solid rgba(255,255,255,0.07)",padding:"14px 0"}}>
-      <div style={{display:"flex",gap:"48px",whiteSpace:"nowrap",animation:"marquee 25s linear infinite"}}>
+    <div className="marquee-wrap">
+      <div className="marquee-track">
         {repeated.map((item, i) => (
-          <span key={i} style={{fontSize:"11px",fontFamily:"'DM Mono',monospace",letterSpacing:"0.16em",textTransform:"uppercase",color:"rgba(240,237,232,0.28)",display:"inline-flex",alignItems:"center",gap:"10px",flexShrink:0}}>
-            <span style={{width:"5px",height:"5px",borderRadius:"50%",background:"#fbbf24",opacity:0.6,display:"inline-block",flexShrink:0}}/>
+          <span key={i} className="marquee-item">
+            <span className="marquee-dot"/>
             {item}
           </span>
         ))}
@@ -77,39 +77,22 @@ const TECH = [
 ]
 
 const BrowserFrame = ({ url, children }) => (
-  <div
-    style={{
-      borderRadius:"14px",
-      border:"1px solid rgba(255,255,255,0.1)",
-      overflow:"hidden",
-      boxShadow:"0 20px 60px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04)",
-      transition:"transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease",
-      transform:"translateY(0)",
-    }}
-    className="browser-frame"
-  >
-    <div style={{background:"#131313",padding:"11px 14px",display:"flex",alignItems:"center",gap:"12px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-      <div style={{display:"flex",gap:"6px",flexShrink:0}}>
-        <div style={{width:"11px",height:"11px",borderRadius:"50%",background:"#ff5f57",flexShrink:0}}/>
-        <div style={{width:"11px",height:"11px",borderRadius:"50%",background:"#febc2e",flexShrink:0}}/>
-        <div style={{width:"11px",height:"11px",borderRadius:"50%",background:"#28c840",flexShrink:0}}/>
+  <div className="browser-frame">
+    <div className="browser-frame-bar">
+      <div className="browser-dots">
+        <div className="browser-dot red"/>
+        <div className="browser-dot yellow"/>
+        <div className="browser-dot green"/>
       </div>
 
-      <div style={{flex:1}}>
-        <div style={{background:"#1c1c1c",borderRadius:"6px",padding:"5px 10px",fontFamily:"'DM Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.25)",textAlign:"center",maxWidth:"280px",margin:"0 auto"}}>
+      <div className="browser-address-wrap">
+        <div className="browser-address">
           {url}
         </div>
       </div>
     </div>
 
-    <div
-      style={{
-        overflow:"hidden",
-        lineHeight:0,
-        background:"#0c0c0c",
-      }}
-      className="browser-frame-image"
-    >
+    <div className="browser-frame-image">
       {children}
     </div>
   </div>
@@ -140,7 +123,7 @@ export default function LandingPage() {
           <nav className={`nav${scrolled ? " scrolled" : ""}`}>
             <Link href="/" className="nav-logo">
               <div className="nav-logo-box">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#080808" strokeWidth="2.5">
+                <svg className="nav-logo-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                   <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
                 </svg>
@@ -277,7 +260,7 @@ export default function LandingPage() {
           <div className="sec-wrap">
             <div className="sec-label">
               <span className="eyebrow">What's inside</span>
-              <h2 className="sec-title">Every feature, <span style={{fontStyle:"italic",color:"rgba(240,237,232,0.32)"}}>built right</span></h2>
+              <h2 className="sec-title">Every feature, <span className="sec-title-italic">built right</span></h2>
               <p className="sec-sub">Not a tutorial project. A production-grade system.</p>
             </div>
             <div className="features-grid">
@@ -287,12 +270,13 @@ export default function LandingPage() {
                   className="feat-card"
                   onMouseEnter={() => setHoveredFeature(i)}
                   onMouseLeave={() => setHoveredFeature(null)}
+                  style={{"--feature-color": color}}
                 >
                   <div className="feat-glow" style={{background:`radial-gradient(ellipse at 0% 0%,${color}08,transparent 60%)`}}/>
-                  <div className="feat-icon-wrap" style={{borderColor:hoveredFeature===i?`${color}40`:"rgba(255,255,255,0.1)"}}>
-                    <Icon size={15} color={hoveredFeature===i?color:"rgba(240,237,232,0.45)"} style={{transition:"color 0.25s",flexShrink:0}}/>
+                  <div className={`feat-icon-wrap${hoveredFeature===i ? " active" : ""}`}>
+                    <Icon size={15} className="feat-icon"/>
                   </div>
-                  <span className="feat-tag" style={{color:`${color}80`}}>{label}</span>
+                  <span className="feat-tag">{label}</span>
                   <div className="feat-title">{title}</div>
                   <div className="feat-desc">{desc}</div>
                 </div>
@@ -304,7 +288,7 @@ export default function LandingPage() {
           <div className="sec-wrap">
             <div className="sec-label">
               <span className="eyebrow">Get started</span>
-              <h2 className="sec-title">Three steps, <span style={{fontStyle:"italic",color:"rgba(240,237,232,0.32)"}}>that's it</span></h2>
+              <h2 className="sec-title">Three steps, <span className="sec-title-italic">that's it</span></h2>
             </div>
             <div className="hiw-grid">
               {STEPS.map(({num,title,desc},i) => (
@@ -322,7 +306,7 @@ export default function LandingPage() {
           <div className="sec-wrap">
             <div className="sec-label">
               <span className="eyebrow">Built with</span>
-              <h2 className="sec-title">Production-grade <span style={{fontStyle:"italic",color:"rgba(240,237,232,0.32)"}}>tools</span></h2>
+              <h2 className="sec-title">Production-grade <span className="sec-title-italic">tools</span></h2>
             </div>
             <div className="tech-grid">
               {TECH.map(({name,desc},i) => (
@@ -359,7 +343,7 @@ export default function LandingPage() {
           <footer className="footer">
             <Link href="/" className="footer-logo">
               <div className="footer-logo-box">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#080808" strokeWidth="2.5">
+                <svg className="footer-logo-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                   <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
                 </svg>
